@@ -13,8 +13,10 @@ class DualSearchPlugin(Star):
     
     def _reload_config(self):
         """加载配置"""
-        self.config = self.context.get_config("dual_search") or {}
-        # 🚨 CR修复 1：防御性编程，避免 get() 拿到 None 时调用 strip() 闪退
+        # 🚨 将 "dual_search" 替换为你的真实插件目录名
+        # 根据你之前的日志，应该是 "askrbot_search" 或者 "askrbot-search"
+        self.config = self.context.get_config("askrbot_search") or {}
+        
         self.bocha_key = (self.config.get("bocha_api_key") or "").strip()
         self.ms_key = (self.config.get("modelscope_api_key") or "").strip()
         self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
