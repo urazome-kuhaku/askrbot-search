@@ -1,0 +1,18 @@
+{
+  "bocha_api_key": {
+    "description": "博查 API Key",
+    "type": "string",
+    "hint": "用于国内直连搜索兜底"
+  },
+  "modelscope_api_key": {
+    "description": "魔塔 API Key (Token)",
+    "type": "string",
+    "hint": "填入你的魔塔 Token",
+    "obvious_hint": true
+  },
+  "modelscope_mcp_url": {
+    "description": "魔塔 MCP 容器地址",
+    "type": "string",
+    "hint": "例如 https://mcp.api-inference..."
+  }
+}
