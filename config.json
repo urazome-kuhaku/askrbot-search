@@ -1,5 +1,5 @@
 {
-    "bocha_api_key": "填入博查 API Key，必填",
-    "modelscope_api_key": "填入魔塔 API Key，如使用Tavily via MCP则必填",
-    "modelscope_mcp_url": "填入魔塔 MCP 容器 URL，例如 https://mcp.api-inference..., 如使用Tavily via MCP则必填"
+    "bocha_api_key": "",
+    "modelscope_api_key": "",
+    "modelscope_mcp_url": ""
 }
