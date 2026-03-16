@@ -1,0 +1,9 @@
+{
+    "name": "dual_search",
+    "version": "1.0.0",
+    "description": "基于 GLM 路由、Bocha 直连与 ModelScope MCP 中继的超级搜索插件",
+    "author": "YourName",
+    "plugin_type": "command",
+    "enabled": true,
+    "requirements": ["httpx>=0.25.0", "mcp>=1.0.0"]
+}
