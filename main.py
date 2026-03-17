@@ -31,12 +31,12 @@ class DualSearchPlugin(Star):
         self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
         
         # 3. 极其暴力的终端自检日志（专门为你排错写的）
-        print("="*50)
-        print(f"🚀 [混合搜索插件] 正在挂载配置...")
-        print(f"📦 命中的配置抽屉: {loaded_name}")
-        print(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
-        print(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
-        print("="*50)
+        yield event.plain_result("="*50)
+        yield event.plain_result(f"🚀 [混合搜索插件] 正在挂载配置...")
+        yield event.plain_result(f"📦 命中的配置抽屉: {loaded_name}")
+        yield event.plain_result(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
+        yield event.plain_result(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
+        yield event.plain_result("="*50)
     
     async def reload(self):
         """热重载配置"""
