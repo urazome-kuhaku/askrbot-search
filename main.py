@@ -2,34 +2,28 @@ import httpx
 from mcp.client.sse import sse_client
 from mcp.client.session import ClientSession
 from astrbot.api.event import filter, AstrMessageEvent
-from astrbot.api.all import logger
 from astrbot.api.star import Context, Star, register
+from astrbot.api.all import MessageEventResult, logger
 from astrbot.api.provider import LLMResponse
 
-@register("askrbot-search", "YourName", "GLM意图路由混合搜索", "1.0.0")
+@register("askrbot_search", "YourName", "GLM意图路由混合搜索", "1.0.0")
 class DualSearchPlugin(Star):
-   def __init__(self, context: Context, config: dict):
-    super().__init__(context)
+    # 🚨 1. 核心依赖注入配置
+    def __init__(self, context: Context, config: dict):
+        super().__init__(context)
+        self.config = config or {}
         
-# 直接拿来用！没有任何多余的 API 调用
-    self.config = config or {}
+        self.bocha_key = self.config.get("bocha_api_key", "").strip()
+        self.ms_key = self.config.get("modelscope_api_key", "").strip()
+        self.ms_url = self.config.get("modelscope_mcp_url", "").strip()
         
-    # 安全提取
-    self.bocha_key = self.config.get("bocha_api_key", "").strip()
-    self.ms_key = self.config.get("modelscope_api_key", "").strip()
-    self.ms_url = self.config.get("modelscope_mcp_url", "").strip()
-        
-    # 官方原生日志输出
-    logger.info("="*50)
-    logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方原生依赖注入)...")
-    logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
-    logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
-    logger.info("="*50)
-    
-    async def reload(self):
-        """热重载配置"""
-        self._reload_config()
-    
+        logger.info("="*50)
+        logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方原生依赖注入)...")
+        logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
+        logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
+        logger.info("="*50)
+
+    # 🚨 2. 大模型通信中枢
     async def ask_llm(self, event: AstrMessageEvent, prompt: str) -> str:
         """调用当前会话正在使用的大模型"""
         try:
@@ -42,9 +36,9 @@ class DualSearchPlugin(Star):
         except Exception as e:
             raise Exception(f"大模型层级报错: {str(e)}")
 
+    # 🚨 3. 国内 Bocha 搜索链路
     async def call_bocha(self, query: str) -> str:
         """底层方法：直连国内 Bocha API"""
-        # 🚨 CR修复 2：绝对不能 return 错误字符串，必须 raise 抛出，激活外层的物理兜底
         if not self.bocha_key:
             raise ValueError("Bocha API Key 暂未配置")
         
@@ -62,6 +56,7 @@ class DualSearchPlugin(Star):
             else:
                 raise Exception(f"HTTP {resp.status_code} - {resp.text}")
 
+    # 🚨 4. 国际 MCP 中继搜索链路
     async def call_tavily_via_mcp(self, query: str) -> str:
         """底层方法：通过魔塔 MCP 云端容器调用 Tavily"""
         if not self.ms_key or not self.ms_url:
@@ -82,6 +77,7 @@ class DualSearchPlugin(Star):
                     return result.content[0].text
                 return ""
 
+    # 🚨 5. QQ 消息触发与智能路由调度网关
     @filter.command("search")
     async def handle_search(self, event: AstrMessageEvent):
         query = event.get_message_str().replace("/search", "").strip()
@@ -101,36 +97,32 @@ class DualSearchPlugin(Star):
             intent = router_response.strip().upper()
         except Exception as e:
             yield event.plain_result(f"⚠️ 路由判断失败({str(e)})，强行触发链路规则...")
-            intent = "BOCHA" # 这里随便给一个，下方的智能队列会负责兜底
+            intent = "BOCHA"
 
         search_text = ""
         
-        # 🚨 CR修复 3：动态路由队列。彻底消灭嵌套 Try-Except，稳如泰山！
-        # 规则：基于意图确定首发阵容。任何一个崩溃，自动由下一个接管。
+        # 智能双向降级队列
         if "TAVILY" in intent:
             engines = [("TAVILY", self.call_tavily_via_mcp), ("BOCHA", self.call_bocha)]
         else:
             engines = [("BOCHA", self.call_bocha), ("TAVILY", self.call_tavily_via_mcp)]
 
-        # 依次尝试执行队列
         for engine_name, engine_func in engines:
             yield event.plain_result(f"📡 尝试启动 [{engine_name}] 检索链路...")
             try:
                 search_text = await engine_func(query)
                 if search_text:
-                    break # 成功拿到网页内容，直接跳出队列！
+                    break 
                 else:
                     yield event.plain_result(f"⚠️ [{engine_name}] 返回空白数据，准备降级接管...")
             except Exception as e:
                 yield event.plain_result(f"⚠️ [{engine_name}] 链路阻断 ({str(e)})，切换备用方案...")
                 search_text = ""
 
-        # 如果跑完了两个引擎还是没拿到数据
         if not search_text:
             yield event.plain_result("❌ 所有检索通道均已瘫痪，请检查配置。")
             return
 
-        # 3. 最终文本注入与总结
         yield event.plain_result("🧠 资料读取完毕，正在生成终极答案...")
         final_prompt = (
             f"请基于以下最新的网页搜索结果，回答用户的问题。严禁产生搜索结果之外的幻觉。\n\n"
