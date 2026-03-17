@@ -8,25 +8,23 @@ from astrbot.api.provider import LLMResponse
 
 @register("askrbot-search", "YourName", "GLM意图路由混合搜索", "1.0.0")
 class DualSearchPlugin(Star):
-    def __init__(self, context: Context):
-        super().__init__(context)
-        self._reload_config()
-    
-    def _reload_config(self):
-        """加载配置 - 官方纯净版"""
-        self.config = self.context.get_config("askrbot_search") or {}
+   def __init__(self, context: Context, config: dict):
+    super().__init__(context)
         
-        # 安全提取
-        self.bocha_key = (self.config.get("bocha_api_key") or "").strip()
-        self.ms_key = (self.config.get("modelscope_api_key") or "").strip()
-        self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
+# 直接拿来用！没有任何多余的 API 调用
+    self.config = config or {}
         
-        # 官方原生日志输出
-        logger.info("="*50)
-        logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方纯净模式)...")
-        logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
-        logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
-        logger.info("="*50)
+    # 安全提取
+    self.bocha_key = self.config.get("bocha_api_key", "").strip()
+    self.ms_key = self.config.get("modelscope_api_key", "").strip()
+    self.ms_url = self.config.get("modelscope_mcp_url", "").strip()
+        
+    # 官方原生日志输出
+    logger.info("="*50)
+    logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方原生依赖注入)...")
+    logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
+    logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
+    logger.info("="*50)
     
     async def reload(self):
         """热重载配置"""
