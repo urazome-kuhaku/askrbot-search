@@ -12,14 +12,31 @@ class DualSearchPlugin(Star):
         self._reload_config()
     
     def _reload_config(self):
-        """加载配置"""
-        # 🚨 将 "dual_search" 替换为你的真实插件目录名
-        # 根据你之前的日志，应该是 "askrbot_search" 或者 "askrbot-search"
-        self.config = self.context.get_config("askrbot_search") or {}
+        """加载配置 - 终极防御版"""
+        # 1. 暴力穷举所有可能的插件注册名，彻底防脱钩
+        possible_names = ["dual_search", "askrbot_search", "askrbot-search"]
+        self.config = {}
+        loaded_name = "未找到"
         
+        for name in possible_names:
+            cfg = self.context.get_config(name)
+            if cfg:
+                self.config = cfg
+                loaded_name = name
+                break
+                
+        # 2. 安全读取并清洗前后空格
         self.bocha_key = (self.config.get("bocha_api_key") or "").strip()
         self.ms_key = (self.config.get("modelscope_api_key") or "").strip()
         self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
+        
+        # 3. 极其暴力的终端自检日志（专门为你排错写的）
+        print("="*50)
+        print(f"🚀 [混合搜索插件] 正在挂载配置...")
+        print(f"📦 命中的配置抽屉: {loaded_name}")
+        print(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
+        print(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
+        print("="*50)
     
     async def reload(self):
         """热重载配置"""
