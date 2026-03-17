@@ -2,5 +2,5 @@ name: askrbot-search
 display_name: GLM 路由混合搜索
 description: 基于意图路由的搜索插件，支持 Bocha 直连与 ModelScope MCP 中继
 author: YourName
-version: 1.1.8
+version: 1.2.0
 repo: https://github.com/urazome-kuhaku/askrbot-search

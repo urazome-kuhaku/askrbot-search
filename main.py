@@ -62,17 +62,27 @@ class DualSearchPlugin(Star):
         if not self.ms_key or not self.ms_url:
             raise ValueError("MCP API Key 或 URL 未配置")
             
+        # 🚨 核心修复 1：拆穿魔塔的 URL 伪装，强行将 /mcp 替换为真正的 /sse 握手端点
+        sse_url = self.ms_url
+        if sse_url.endswith("/mcp"):
+            sse_url = sse_url[:-4] + "/sse"
+            
         headers = {
             "Authorization": f"Bearer {self.ms_key}",
             "Accept": "text/event-stream"
         }
-        async with sse_client(url=self.ms_url, headers=headers) as streams:
+        
+        # 开启标准的 MCP SSE 通道
+        async with sse_client(url=sse_url, headers=headers) as streams:
             async with ClientSession(streams[0], streams[1]) as session:
                 await session.initialize()
+                
+                # 🚨 核心修复 2：严格遵守官方 GitHub 的真实工具名
                 result = await session.call_tool(
-                    "tavily_web_search", 
+                    "tavily-search",  # 必须是官方源码里定义的中划线命名
                     arguments={"query": query}
                 )
+                
                 if result.content and len(result.content) > 0:
                     return result.content[0].text
                 return ""
