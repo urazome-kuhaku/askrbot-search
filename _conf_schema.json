@@ -26,7 +26,7 @@
     "tavily_max_results": {
         "title": "Tavily 最大返回条数",
         "description": "控制抓取的网页数量（建议填写 3 到 5）",
-        "type": "number",
+        "type": "int",
         "default": 5
     }
 }
