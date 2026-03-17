@@ -1,7 +1,8 @@
 import httpx
 from mcp.client.sse import sse_client
 from mcp.client.session import ClientSession
-from astrbot.api.event import filter, AstrMessageEvent,logger
+from astrbot.api.event import filter, AstrMessageEvent
+from astrbot.api.all import logger
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import LLMResponse
 
