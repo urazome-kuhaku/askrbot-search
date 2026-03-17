@@ -1,5 +1,3 @@
-import json
-import os
 import httpx
 from mcp.client.sse import sse_client
 from mcp.client.session import ClientSession
@@ -15,31 +13,20 @@ class DualSearchPlugin(Star):
         self._reload_config()
     
     def _reload_config(self):
-        """加载配置 - 终极物理直读版"""
-        # 1. 先象征性地问一下框架（大概率还是瞎的）
+        """加载配置 - 官方纯净版"""
         self.config = self.context.get_config("askrbot_search") or {}
-        read_mode = "框架 API"
         
-        # 2. 🚨 终极降维打击：如果框架没读到，直接越过框架，物理读取硬盘！
-        if not self.config.get("modelscope_mcp_url"):
-            # 拼接你刚才发现的那个文件的物理路径 (兼容 Windows/Linux)
-            # AstrBot 运行时，根目录通常就是含有 data 文件夹的目录
-            physical_path = os.path.join("data", "config", "askrbot_search_config.json")
-            
-            if os.path.exists(physical_path):
-                try:
-                    with open(physical_path, "r", encoding="utf-8") as f:
-                        self.config = json.load(f)
-                        read_mode = "硬盘物理直读 (绕过框架)"
-                except Exception as e:
-                    logger.error(f"❌ 物理读取 JSON 失败: {str(e)}")
-            else:
-                logger.error(f"❌ 找不到物理配置文件: {physical_path}")
-
-        # 3. 安全提取并清洗前后空格
+        # 安全提取
         self.bocha_key = (self.config.get("bocha_api_key") or "").strip()
         self.ms_key = (self.config.get("modelscope_api_key") or "").strip()
         self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
+        
+        # 官方原生日志输出
+        logger.info("="*50)
+        logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方纯净模式)...")
+        logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
+        logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
+        logger.info("="*50)
         
         # 4. 暴力宣示主权日志
         logger.info("="*50)
