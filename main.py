@@ -6,35 +6,26 @@ from astrbot.api.all import logger
 from astrbot.api.star import Context, Star, register
 from astrbot.api.provider import LLMResponse
 
-@register("dual_search", "YourName", "GLM意图路由混合搜索", "1.0.0")
+@register("askrbot-search", "YourName", "GLM意图路由混合搜索", "1.0.0")
 class DualSearchPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
         self._reload_config()
     
     def _reload_config(self):
-        """加载配置 - 终极防御版"""
-        # 1. 暴力穷举所有可能的插件注册名，彻底防脱钩
-        possible_names = ["dual_search", "askrbot_search", "askrbot-search"]
-        self.config = {}
-        loaded_name = "未找到"
+        """加载配置 - 终极锁定版"""
+        # 🚨 抛弃穷举，直接精准狙击这唯一的抽屉！
+        self.config = self.context.get_config("askrbot_search") or {}
         
-        for name in possible_names:
-            cfg = self.context.get_config(name)
-            if cfg:
-                self.config = cfg
-                loaded_name = name
-                break
-                
-        # 2. 安全读取并清洗前后空格
+        # 安全读取
         self.bocha_key = (self.config.get("bocha_api_key") or "").strip()
         self.ms_key = (self.config.get("modelscope_api_key") or "").strip()
         self.ms_url = (self.config.get("modelscope_mcp_url") or "").strip()
         
-        # 3. 极其暴力的终端自检日志（专门为你排错写的）
+        # 官方原生日志输出
         logger.info("="*50)
         logger.info(f"🚀 [混合搜索插件] 正在挂载配置...")
-        logger.info(f"📦 命中的配置抽屉: {loaded_name}")
+        logger.info(f"📦 锁定的配置抽屉: askrbot_search")
         logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
         logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
         logger.info("="*50)
