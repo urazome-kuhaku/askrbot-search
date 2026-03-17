@@ -17,11 +17,12 @@ class DualSearchPlugin(Star):
         self.ms_key = self.config.get("modelscope_api_key", "").strip()
         self.ms_url = self.config.get("modelscope_mcp_url", "").strip()
         
-        logger.info("="*50)
-        logger.info(f"🚀 [混合搜索插件] 正在挂载配置 (官方原生依赖注入)...")
-        logger.info(f"🔑 MCP URL 状态: {'✅已填' if self.ms_url else '❌空值'} -> {self.ms_url}")
-        logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
-        logger.info("="*50)
+        # 🚨 新增：接管 Tavily 高级配置，并做绝对安全的兜底
+        self.tavily_depth = self.config.get("tavily_search_depth", "basic").strip() or "basic"
+        try:
+            self.tavily_max_results = int(self.config.get("tavily_max_results", 5))
+        except (ValueError, TypeError):
+            self.tavily_max_results = 5
 
     async def ask_llm(self, event: AstrMessageEvent, prompt: str) -> str:
         """调用当前会话正在使用的大模型"""
@@ -70,9 +71,13 @@ class DualSearchPlugin(Star):
                 
                 # 🚨 核心修复 3：遵循官方源码的中划线命名
                 result = await session.call_tool(
-                    "tavily-search", 
-                    arguments={"query": query}
-                )
+                        "tavily-search", 
+                        arguments={
+                            "query": query,
+                            "search_depth": self.tavily_depth,
+                            "max_results": self.tavily_max_results
+                        }
+                    )
                 
                 if result.content and len(result.content) > 0:
                     return result.content[0].text

@@ -1,18 +1,32 @@
 {
-  "bocha_api_key": {
-    "description": "博查 API Key",
-    "type": "string",
-    "hint": "用于国内直连搜索兜底"
-  },
-  "modelscope_api_key": {
-    "description": "魔塔 API Key (Token)",
-    "type": "string",
-    "hint": "填入你的魔塔 Token",
-    "obvious_hint": true
-  },
-  "modelscope_mcp_url": {
-    "description": "魔塔 MCP 容器地址",
-    "type": "string",
-    "hint": "例如 https://mcp.api-inference..."
-  }
+    "bocha_api_key": {
+        "title": "Bocha API Key",
+        "description": "国内博查搜索密钥",
+        "type": "string",
+        "default": ""
+    },
+    "modelscope_mcp_url": {
+        "title": "魔塔 MCP URL",
+        "description": "魔塔部署的 Tavily 容器 Streamable 地址",
+        "type": "string",
+        "default": ""
+    },
+    "modelscope_api_key": {
+        "title": "魔塔 API Key",
+        "description": "魔塔的访问 Token",
+        "type": "string",
+        "default": ""
+    },
+    "tavily_search_depth": {
+        "title": "Tavily 搜索深度",
+        "description": "填 basic (省额度/极速) 或 advanced (消耗双倍额度/深度聚合)",
+        "type": "string",
+        "default": "basic"
+    },
+    "tavily_max_results": {
+        "title": "Tavily 最大返回条数",
+        "description": "控制抓取的网页数量（建议填写 3 到 5）",
+        "type": "number",
+        "default": 5
+    }
 }
