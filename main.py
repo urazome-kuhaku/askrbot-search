@@ -1,5 +1,6 @@
 import httpx
-from mcp.client.sse import sse_client
+# 🚨 核心修复 1：导入专为魔塔 Serverless 云端打造的 streamable HTTP 引擎
+from mcp.client.streamable_http import streamablehttp_client
 from mcp.client.session import ClientSession
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
@@ -8,7 +9,6 @@ from astrbot.api.provider import LLMResponse
 
 @register("askrbot_search", "YourName", "GLM意图路由混合搜索", "1.0.0")
 class DualSearchPlugin(Star):
-    # 🚨 1. 核心依赖注入配置
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
         self.config = config or {}
@@ -23,7 +23,6 @@ class DualSearchPlugin(Star):
         logger.info(f"🔑 MCP Key 状态: {'✅已填' if self.ms_key else '❌空值'} -> 长度: {len(self.ms_key)}")
         logger.info("="*50)
 
-    # 🚨 2. 大模型通信中枢
     async def ask_llm(self, event: AstrMessageEvent, prompt: str) -> str:
         """调用当前会话正在使用的大模型"""
         try:
@@ -36,7 +35,6 @@ class DualSearchPlugin(Star):
         except Exception as e:
             raise Exception(f"大模型层级报错: {str(e)}")
 
-    # 🚨 3. 国内 Bocha 搜索链路
     async def call_bocha(self, query: str) -> str:
         """底层方法：直连国内 Bocha API"""
         if not self.bocha_key:
@@ -56,30 +54,23 @@ class DualSearchPlugin(Star):
             else:
                 raise Exception(f"HTTP {resp.status_code} - {resp.text}")
 
-    # 🚨 4. 国际 MCP 中继搜索链路
     async def call_tavily_via_mcp(self, query: str) -> str:
         """底层方法：通过魔塔 MCP 云端容器调用 Tavily"""
         if not self.ms_key or not self.ms_url:
             raise ValueError("MCP API Key 或 URL 未配置")
             
-        # 🚨 核心修复 1：拆穿魔塔的 URL 伪装，强行将 /mcp 替换为真正的 /sse 握手端点
-        sse_url = self.ms_url
-        if sse_url.endswith("/mcp"):
-            sse_url = sse_url[:-4] + "/sse"
-            
         headers = {
-            "Authorization": f"Bearer {self.ms_key}",
-            "Accept": "text/event-stream"
+            "Authorization": f"Bearer {self.ms_key}"
         }
         
-        # 开启标准的 MCP SSE 通道
-        async with sse_client(url=sse_url, headers=headers) as streams:
+        # 🚨 核心修复 2：使用 streamablehttp_client 引擎，URL 保持魔塔原样（不要加/sse了）
+        async with streamablehttp_client(url=self.ms_url, headers=headers) as streams:
             async with ClientSession(streams[0], streams[1]) as session:
                 await session.initialize()
                 
-                # 🚨 核心修复 2：严格遵守官方 GitHub 的真实工具名
+                # 🚨 核心修复 3：遵循官方源码的中划线命名
                 result = await session.call_tool(
-                    "tavily-search",  # 必须是官方源码里定义的中划线命名
+                    "tavily-search", 
                     arguments={"query": query}
                 )
                 
@@ -87,7 +78,6 @@ class DualSearchPlugin(Star):
                     return result.content[0].text
                 return ""
 
-    # 🚨 5. QQ 消息触发与智能路由调度网关
     @filter.command("search")
     async def handle_search(self, event: AstrMessageEvent):
         query = event.get_message_str().replace("/search", "").strip()
@@ -133,7 +123,7 @@ class DualSearchPlugin(Star):
             yield event.plain_result("❌ 所有检索通道均已瘫痪，请检查配置。")
             return
 
-        yield event.plain_result("🧠 资料读取完毕，正在生成终极答案...")
+        yield event.plain_result("🧠 资料抓取完成，GLM 正在阅读并总结...")
         final_prompt = (
             f"请基于以下最新的网页搜索结果，回答用户的问题。严禁产生搜索结果之外的幻觉。\n\n"
             f"【搜索结果】:\n{search_text}\n\n"
